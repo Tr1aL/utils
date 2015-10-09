@@ -8,6 +8,9 @@
     <artifactId>utils</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <name>Tr1aL Utils</name>
+    <url>http://www.tr1al.ru</url>
+
     <properties>
         <java.version>1.8</java.version>
         <github.global.server>github</github.global.server>
