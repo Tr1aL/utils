@@ -1,4 +1,4 @@
-//SAA: translated
+package ru.tr1al.util;
 
 import java.math.BigInteger;
 import java.net.InetAddress;
