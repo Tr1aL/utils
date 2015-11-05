@@ -32,7 +32,7 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
     protected static Logger logger = LoggerFactory.getLogger(AbstractDAO.class);
 
     @Autowired
-    private SessionFactory sessionFactory;
+    public SessionFactory sessionFactory;
 
     public List<T> getAll() {
         return getAll(null);

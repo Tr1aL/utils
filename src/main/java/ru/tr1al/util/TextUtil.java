@@ -37,7 +37,7 @@ public class TextUtil {
 
     public static Integer getIntegerOrNull(String s) {
         try {
-            return Integer.parseInt(s);
+            return Integer.parseInt(s.replaceAll(" ", ""));
         } catch (Exception e) {
             return null;
         }
@@ -45,11 +45,11 @@ public class TextUtil {
 
     public static Double getDoubleOrNull(String s) {
         try {
-            s = s.replaceAll(",", ".");
+            s = s.replaceAll(" ", "").replaceAll(",", ".");
             return Double.parseDouble(s);
         } catch (NumberFormatException e) {
             try {
-                s = s.replaceAll("\\.", ",");
+                s = s.replaceAll(" ", "").replaceAll("\\.", ",");
                 return Double.parseDouble(s);
             } catch (NumberFormatException e1) {
                 return null;
