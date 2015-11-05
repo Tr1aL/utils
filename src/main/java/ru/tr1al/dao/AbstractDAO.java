@@ -6,7 +6,6 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -41,14 +40,9 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
     public List<T> getAll(String sort) {
         logger.debug(sort != null ? "Sorting all {}" : "Retrieving all {}", getEntityClass());
         Session session = sessionFactory.getCurrentSession();
-        if (sort != null) {
-            Criteria criteria = session.createCriteria(getEntityClass());
-            criteria.addOrder(Order.asc(sort));
-            return (List<T>) criteria.list();
-        } else {
-            Query query = session.createQuery("FROM " + getEntityClass().getName());
-            return (List<T>) query.list();
-        }
+        Query query = session.createQuery("FROM " + getEntityClass().getName()
+                + (sort != null ? " order by " + sort : ""));
+        return (List<T>) query.list();
     }
 
     public T get(Integer id) {
@@ -111,10 +105,13 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
         session.update(obj);
     }
 
-
     public List<T> getListCriteria(DetachedCriteria detachedCriteria, boolean cacheable, Integer offset, Integer limit) {
         Session session = sessionFactory.getCurrentSession();
         Criteria criteria = detachedCriteria.getExecutableCriteria(session);
+        return getListCriteria(criteria, cacheable, offset, limit);
+    }
+
+    public List<T> getListCriteria(Criteria criteria, boolean cacheable, Integer offset, Integer limit) {
         criteria.setCacheable(cacheable);
         if (limit != null) {
             criteria.setMaxResults(limit);
@@ -128,6 +125,10 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
     public T uniqueResultCriteria(DetachedCriteria detachedCriteria, boolean cacheable) {
         Session session = sessionFactory.getCurrentSession();
         Criteria criteria = detachedCriteria.getExecutableCriteria(session);
+        return uniqueResultCriteria(criteria, cacheable);
+    }
+
+    public T uniqueResultCriteria(Criteria criteria, boolean cacheable) {
         criteria.setCacheable(cacheable);
         return (T) criteria.uniqueResult();
     }
@@ -137,9 +138,19 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
         return getDoubleCriteria(detachedCriteria, cacheable).intValue();
     }
 
+    public Integer getCountCriteria(Criteria criteria, boolean cacheable) {
+        criteria.setProjection(Projections.rowCount());
+        return getDoubleCriteria(criteria, cacheable).intValue();
+    }
+
     public Double getSumCriteria(DetachedCriteria detachedCriteria, String field, boolean cacheable) {
         detachedCriteria.setProjection(Projections.sum(field));
         return getDoubleCriteria(detachedCriteria, cacheable);
+    }
+
+    public Double getSumCriteria(Criteria criteria, String field, boolean cacheable) {
+        criteria.setProjection(Projections.sum(field));
+        return getDoubleCriteria(criteria, cacheable);
     }
 
     public Integer getCountDistinctCriteria(DetachedCriteria detachedCriteria, String field, boolean cacheable) {
@@ -147,9 +158,18 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
         return getDoubleCriteria(detachedCriteria, cacheable).intValue();
     }
 
+    public Integer getCountDistinctCriteria(Criteria criteria, String field, boolean cacheable) {
+        criteria.setProjection(Projections.countDistinct(field));
+        return getDoubleCriteria(criteria, cacheable).intValue();
+    }
+
     public Double getDoubleCriteria(DetachedCriteria detachedCriteria, boolean cacheable) {
         Session session = sessionFactory.getCurrentSession();
         Criteria criteria = detachedCriteria.getExecutableCriteria(session);
+        return getDoubleCriteria(criteria, cacheable);
+    }
+
+    public Double getDoubleCriteria(Criteria criteria, boolean cacheable) {
         criteria.setCacheable(cacheable);
         Object o = criteria.uniqueResult();
         return TextUtil.getDoubleValueOrDef(o, 0.);
@@ -159,14 +179,18 @@ public abstract class AbstractDAO<T extends Model> implements DAO {
         Session session = sessionFactory.getCurrentSession();
         Query q = createQuery(session, query);
         applyParameter(q, param);
-        q.setCacheable(cacheable);
+        return getList(q, cacheable, offset, limit);
+    }
+
+    public List<T> getList(Query query, boolean cacheable, Integer offset, Integer limit) {
+        query.setCacheable(cacheable);
         if (offset != null) {
-            q.setFirstResult(offset);
+            query.setFirstResult(offset);
         }
         if (limit != null) {
-            q.setMaxResults(limit);
+            query.setMaxResults(limit);
         }
-        return (List<T>) q.list();
+        return (List<T>) query.list();
     }
 
     private void applyParameter(Query q, Object... param) {
